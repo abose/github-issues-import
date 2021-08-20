@@ -2,8 +2,8 @@
 # For a full list of options, see <http://www.iqandreas.com/github-issues-import/configuration/>
 
 [login]
-username = OctoDog
-password = plaintext_pa$$w0rd
+username = <Your github personal access token here if using github oauth tokens>
+password = x-oauth-basic
 
 [source]
 repository = OctoCat/Hello-World
