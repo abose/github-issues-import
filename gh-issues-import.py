@@ -7,6 +7,7 @@ import base64
 import sys, os
 import datetime
 import argparse, configparser
+import re
 
 import query
 
@@ -36,6 +37,13 @@ http_error_messages[403] = http_error_messages[
     401];  # Basically the same problem. GitHub returns 403 instead to prevent abuse.
 http_error_messages[
     404] = "ERROR: Unable to find the specified repository.\nDouble check the spelling for the source and target repositories. If either repository is private, make sure the specified user is allowed access to it."
+
+
+def replace_mentions(text):
+    regex = r'^@{1}| @{1}'
+    subst = "`@`"
+    result = re.sub(regex, subst, text, 0, re.MULTILINE)
+    return result
 
 
 def init_config():
@@ -325,7 +333,7 @@ def import_comments(comments, issue_number):
         template_data['url'] = comment['html_url']
         template_data['body'] = comment['body']
 
-        comment['body'] = format_comment(template_data)
+        comment['body'] = replace_mentions(format_comment(template_data))
 
         result_comment = send_request('target', "issues/%s/comments" % issue_number, comment)
         result_comments.append(result_comment)
@@ -404,7 +412,7 @@ def import_issues(issues):
         template_data['user_avatar'] = issue['user']['avatar_url']
         template_data['date'] = format_date(issue['created_at'])
         template_data['url'] = issue['html_url']
-        template_data['body'] = issue['body']
+        template_data['body'] = replace_mentions(issue['body'])
 
         if "pull_request" in issue and issue['pull_request']['html_url'] is not None:
             new_issue['body'] = format_pull_request(template_data)
