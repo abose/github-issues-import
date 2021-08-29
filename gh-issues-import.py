@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import urllib.request, urllib.error, urllib.parse
+import time
 import traceback
 import json
 import base64
@@ -14,6 +15,8 @@ import query
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 default_config_file = os.path.join(__location__, 'config.ini')
 config = configparser.RawConfigParser()
+
+APPROX_WRITE_SECONDS_PER_TRANSACTION_TO_GITHUB = 2
 
 
 class state:
@@ -485,6 +488,8 @@ def import_issues(issues):
             result_issues.append(result_issue)
         except Exception as e:
             print('failed issue ', e)
+
+        time.sleep(APPROX_WRITE_TPS_TO_GITHUB)
 
     state.current = state.IMPORT_COMPLETE
 
