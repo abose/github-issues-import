@@ -17,6 +17,7 @@ default_config_file = os.path.join(__location__, 'config.ini')
 config = configparser.RawConfigParser()
 
 APPROX_WRITE_SECONDS_PER_TRANSACTION_TO_GITHUB = 2
+APPROX_READ_SECONDS_PER_TRANSACTION_TO_GITHUB = 2
 
 
 class state:
@@ -436,6 +437,8 @@ def import_issues(issues):
             except Exception as e:
                 print("Error processing issue: ", issue['title'])
 
+            time.sleep(APPROX_READ_SECONDS_PER_TRANSACTION_TO_GITHUB)
+
         f = open("newIssues.json", "w")
         f.write(json.dumps(new_issues))
         f.close()
@@ -510,15 +513,30 @@ if __name__ == '__main__':
 
     state.current = state.FETCHING_ISSUES
 
-    # Argparser will prevent us from getting both issue ids and specifying issue state, so no duplicates will be added
-    if (len(issue_ids) > 0):
-        issues += get_issues_by_id('source', issue_ids)
+    loaded_from_file = False
 
-    if config.getboolean('settings', 'import-open-issues'):
-        issues += get_issues_by_state('source', 'open')
+    try:
+        f = open("Github_first_load_data.json", "r")
+        issues = json.loads(f.read())
+        f.close()
+        loaded_from_file = True
+    except Exception as e:
+        print('Could not bootstrap issues from file, getting from github again')
 
-    if config.getboolean('settings', 'import-closed-issues'):
-        issues += get_issues_by_state('source', 'closed')
+    if not loaded_from_file:
+        # Argparser will prevent us from getting both issue ids and specifying issue state, so no duplicates will be added
+        if (len(issue_ids) > 0):
+            issues += get_issues_by_id('source', issue_ids)
+
+        if config.getboolean('settings', 'import-open-issues'):
+            issues += get_issues_by_state('source', 'open')
+
+        if config.getboolean('settings', 'import-closed-issues'):
+            issues += get_issues_by_state('source', 'closed')
+
+        f = open("Github_first_load_data.json", "w")
+        f.write(json.dumps(issues))
+        f.close()
 
     # Sort issues based on their original `id` field
     # Confusing, but taken from http://stackoverflow.com/a/2878123/617937
