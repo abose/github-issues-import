@@ -370,8 +370,17 @@ def import_issues(issues):
     new_milestones = []
     new_labels = []
     num_issues = 0
+    loaded_from_file = False
 
-    if query.yes_no("Do you want to fetch all issues from github again?"):
+    try:
+        f = open("newIssues.json", "r")
+        new_issues = json.loads(f.read())
+        f.close()
+        loaded_from_file = True
+    except Exception as e:
+        print('Could not load issues from file, getting from github again')
+
+    if not loaded_from_file:
         for issue in issues:
 
             num_issues = num_issues + 1
@@ -430,10 +439,6 @@ def import_issues(issues):
         f = open("newIssues.json", "w")
         f.write(json.dumps(new_issues))
         f.close()
-    else:
-        f = open("newIssues.json", "r")
-        new_issues = json.loads(f.read())
-        f.close()
 
 
     state.current = state.IMPORT_CONFIRMATION
@@ -489,7 +494,7 @@ def import_issues(issues):
         except Exception as e:
             print('failed issue ', e)
 
-        time.sleep(APPROX_WRITE_TPS_TO_GITHUB)
+        time.sleep(APPROX_WRITE_SECONDS_PER_TRANSACTION_TO_GITHUB)
 
     state.current = state.IMPORT_COMPLETE
 
