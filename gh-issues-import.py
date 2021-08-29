@@ -371,55 +371,57 @@ def import_issues(issues):
     for issue in issues:
 
         num_issues = num_issues + 1
-        print('Processing issue: ', num_issues)
-        new_issue = {}
-        new_issue['title'] = issue['title']
+        try:
+            print('Processing issue: ', num_issues)
+            new_issue = {'title': issue['title']}
 
-        # Temporary fix for marking closed issues
-        if issue['closed_at']:
-            new_issue['title'] = "[CLOSED] " + new_issue['title']
+            # Temporary fix for marking closed issues
+            if issue['closed_at']:
+                new_issue['title'] = "[CLOSED] " + new_issue['title']
 
-        if config.getboolean('settings', 'import-comments') and 'comments' in issue and issue['comments'] != 0:
-            num_new_comments += int(issue['comments'])
-            new_issue['comments'] = get_comments_on_issue('source', issue)
+            if config.getboolean('settings', 'import-comments') and 'comments' in issue and issue['comments'] != 0:
+                num_new_comments += int(issue['comments'])
+                new_issue['comments'] = get_comments_on_issue('source', issue)
 
-        if config.getboolean('settings', 'import-milestone') and 'milestone' in issue and issue[
-            'milestone'] is not None:
-            # Since the milestones' ids are going to differ, we will compare them by title instead
-            found_milestone = get_milestone_by_title(issue['milestone']['title'])
-            if found_milestone:
-                new_issue['milestone_object'] = found_milestone
-            else:
-                new_milestone = issue['milestone']
-                new_issue['milestone_object'] = new_milestone
-                known_milestones.append(new_milestone)  # Allow it to be found next time
-                new_milestones.append(new_milestone)  # Put it in a queue to add it later
-
-        if config.getboolean('settings', 'import-labels') and 'labels' in issue and issue['labels'] is not None:
-            new_issue['label_objects'] = []
-            for issue_label in issue['labels']:
-                found_label = get_label_by_name(issue_label['name'])
-                if found_label:
-                    new_issue['label_objects'].append(found_label)
+            if config.getboolean('settings', 'import-milestone') and 'milestone' in issue and issue[
+                'milestone'] is not None:
+                # Since the milestones' ids are going to differ, we will compare them by title instead
+                found_milestone = get_milestone_by_title(issue['milestone']['title'])
+                if found_milestone:
+                    new_issue['milestone_object'] = found_milestone
                 else:
-                    new_issue['label_objects'].append(issue_label)
-                    known_labels.append(issue_label)  # Allow it to be found next time
-                    new_labels.append(issue_label)  # Put it in a queue to add it later
+                    new_milestone = issue['milestone']
+                    new_issue['milestone_object'] = new_milestone
+                    known_milestones.append(new_milestone)  # Allow it to be found next time
+                    new_milestones.append(new_milestone)  # Put it in a queue to add it later
 
-        template_data = {}
-        template_data['user_name'] = issue['user']['login']
-        template_data['user_url'] = issue['user']['html_url']
-        template_data['user_avatar'] = issue['user']['avatar_url']
-        template_data['date'] = format_date(issue['created_at'])
-        template_data['url'] = issue['html_url']
-        template_data['body'] = replace_mentions(issue['body'])
+            if config.getboolean('settings', 'import-labels') and 'labels' in issue and issue['labels'] is not None:
+                new_issue['label_objects'] = []
+                for issue_label in issue['labels']:
+                    found_label = get_label_by_name(issue_label['name'])
+                    if found_label:
+                        new_issue['label_objects'].append(found_label)
+                    else:
+                        new_issue['label_objects'].append(issue_label)
+                        known_labels.append(issue_label)  # Allow it to be found next time
+                        new_labels.append(issue_label)  # Put it in a queue to add it later
 
-        if "pull_request" in issue and issue['pull_request']['html_url'] is not None:
-            new_issue['body'] = format_pull_request(template_data)
-        else:
-            new_issue['body'] = format_issue(template_data)
+            template_data = {}
+            template_data['user_name'] = issue['user']['login']
+            template_data['user_url'] = issue['user']['html_url']
+            template_data['user_avatar'] = issue['user']['avatar_url']
+            template_data['date'] = format_date(issue['created_at'])
+            template_data['url'] = issue['html_url']
+            template_data['body'] = replace_mentions(issue['body'])
 
-        new_issues.append(new_issue)
+            if "pull_request" in issue and issue['pull_request']['html_url'] is not None:
+                new_issue['body'] = format_pull_request(template_data)
+            else:
+                new_issue['body'] = format_issue(template_data)
+
+            new_issues.append(new_issue)
+        except Exception as e:
+            print("Error processing issue: ", issue['title'])
 
     state.current = state.IMPORT_CONFIRMATION
 
